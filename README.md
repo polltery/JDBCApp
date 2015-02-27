@@ -1,4 +1,4 @@
-# JDBCApp
+# JDBCApp (private)
 
 JDBCApp connects to a mySQL database, to view and perform queries on it. 
 
