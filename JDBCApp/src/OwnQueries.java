@@ -18,14 +18,45 @@ public class OwnQueries extends JFrame
   	JTextArea outputArea;
   	QueryTable tableResults;
 	Connection con;
-	final static int NUM_BUTTONS = 7;
+	final static int NUM_BUTTONS = 12;
 	JButton queryButton[] = new JButton[NUM_BUTTONS];;
 	
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	//add more prepared statements here if you need more
 	PreparedStatement prepStat1, prepStat2, prepStat3, prepStat4;
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
-  
+	
+	/*
+	 * Set of queries that needs to be can be added:
+	 * Giving discounts:
+	 * UPDATE dbcustomer SET cuAmountDue = IF(cuEventsBooked <= 5, cuAmountDue*(1-cuEventsBooked*0.10),cuAmountDue*0.5) WHERE cuAmountDue > 0 AND cuEventsBooked > 1;
+	 * 
+	 * Updating customer stats:
+	 * UPDATE dbcustomer SET cuEventsBooked = (SELECT COUNT(evCustomerID) FROM dbevent WHERE evCustomerID = cuID);
+	 * UPDATE dbcustomer SET cuFeeStatus = IF(cuAmountDue > 0,'Due','Paid');
+	 * 
+	 * Select employee(s) and perform updates:
+	 * UPDATE emSalary SET emSalary = emSalary+(emSalary*0.1) WHERE NOW() > DATE_ADD(emJoinDate,INTERVAL 1 YEAR);
+	 * 
+	 * Money Flow of the company:
+	 * SELECT SUM(cuAmountPaid) AS 'Income', SUM(cuAmountDue) AS 'Due Income', SUM(cuAmountPaid)+SUM(cuAmountDue) AS 'Potential Income' FROM dbcustomer;
+	 * SELECT SUM(emSalary) AS 'costs per month' FROM dbemployee;
+	 * 
+	 * Employee details:
+	 * SELECT CONCAT(emFirstName,' ',emLastName) AS 'Employee Name', veName AS 'Venue', deName AS 'Departmen', emManager AS 'Manager' FROM dbemployee,dbvenue,dbdepartment WHERE emWorkVenueID = veID AND emDepartmentID = deID;
+	 *
+	 *
+	 * Set of queries that will need extra coding:
+	 * Customer transactions
+	 * UPDATE dbcustomer SET cuAmountPaid=(cuAmountPaid+cuAmountDue),cuAmount=0 WHERE cuID = 1;
+	 * UPDATE dbcustomer SET cuAmountPaid=cuAmountPaid+25,cuAmountDue=cuAmountDue-25 WHERE cuID =2;
+	 * 
+	 * Finding upcoming event detals:
+	 * SELECT evName AS 'Name', cuName AS 'Held by', veName AS 'Location', DATE_FORMAT(evStartDate, '%d %b%y') AS 'Start Date', DATEDIFF(evEndDate,evStartDate) AS 'Duration (Days)' FROM dbevent,dbcustomer,dbvenue WHERE evCustomerID = cuID AND evVenueID = veID AND evStartDate BETWEEN '2005-01-01' AND '2015-01-01';
+	 * SELECT evName AS 'Name', cuName AS 'Held by', DATE_FORMAT(evStartDate, '%d %b%y') AS 'Start Date', DATEDIFF(evEndDate,evStartDate) AS 'Duration (Days)' FROM dbevent,dbcustomer,dbvenue WHERE evCustomerID = cuID AND evVenueID = veID AND evStartDate = 1;
+	 *
+	 */
+	
   	/////////////////////////////////////////////////////////////////
   	//Constructor sets up frame with 
   	//	an area for SQL entry 
@@ -70,13 +101,20 @@ public class OwnQueries extends JFrame
 	   	
 	   	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	   	//change the button texts in this section
-	   	queryButton[0] = new JButton("employees born before");
-	   	queryButton[1] = new JButton("depts with employee with salary less than limit");
-	   	queryButton[2] = new JButton("insert then delete");  	
-	   	queryButton[3] = new JButton("an update");  	
-	   	queryButton[4] = new JButton("prepared statement with 2 parameters");
-	   	queryButton[5] = new JButton("get list of params, choose, then use ");  	
-	   	queryButton[6] = new JButton("");
+	   	queryButton[0] = new JButton("Give all Customer discounts");
+	   	queryButton[1] = new JButton("Update Customer Detials (Events Booked)");
+		queryButton[2] = new JButton("Update Customer Detials (Fee Status)");
+	   	queryButton[3] = new JButton("Give 1 year old employees a raise");  	
+	   	queryButton[4] = new JButton("View employee details");  	
+	   	queryButton[5] = new JButton("View Money Flow of the company (Expenditure)");
+	   	queryButton[6] = new JButton("View Money Flow of the company (Income)");  	
+	   	queryButton[7] = new JButton("Update customer amount paid (Some amount)");
+	   	queryButton[8] = new JButton("Update customer amount paid (All amount)");
+	   	queryButton[9] = new JButton("View upcoming event(s) (Filter by Date)");
+	   	queryButton[10] = new JButton("View upcoming event(s) (Filter by Location");
+	   	queryButton[11] = new JButton("");
+	   	
+	   	//TODO: Similar queries will be grouped and user will get an option on which specific query needs to be performed
 
 	   	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	   
