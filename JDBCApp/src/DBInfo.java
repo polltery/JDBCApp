@@ -36,7 +36,9 @@ class DBInfo
 	public static  DescQuery descQueries [] = 
 		{
 	        new DescQuery ("", ""),  //LEAVE BLANK
-		    new DescQuery ("employeeinfoview", "Employees, deptment and locations"),
+		    new DescQuery ("employeeinfoview", "Employees, deptment and locations."),
+		    new DescQuery ("customerinfoview", "View customer details."),
+		    new DescQuery ("bookinginfoview","View customers event bookings.")
 		};
 	//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	//Don't change anything beyond this line
