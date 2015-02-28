@@ -37,7 +37,7 @@ class UserPassDialog extends JDialog
 		
 		//Panel for button
 		Panel pOK = new Panel();
-		okButton = new JButton("OK");
+		okButton = new JButton("Log in");
 		okButton.addActionListener(this);
 		pOK.add(okButton);	
 		getContentPane().add("South",pOK);
