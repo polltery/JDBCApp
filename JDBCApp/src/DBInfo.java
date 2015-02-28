@@ -37,8 +37,8 @@ class DBInfo
 		{
 	        new DescQuery ("", ""),  //LEAVE BLANK
 		    new DescQuery ("employeeinfoview", "Employees, deptment and locations."),
-		    new DescQuery ("customerinfoview", "View customer details."),
-		    new DescQuery ("bookinginfoview","View customers event bookings.")
+		    new DescQuery ("customerinfoview", "Customer details."),
+		    new DescQuery ("bookinginfoview","Customers event bookings.")
 		};
 	//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	//Don't change anything beyond this line
