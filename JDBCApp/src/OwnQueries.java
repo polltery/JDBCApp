@@ -25,7 +25,7 @@ public class OwnQueries extends JFrame
 	
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	//add more prepared statements here if you need more
-	PreparedStatement prepStat1, prepStat2, prepStat3, prepStat4;
+	PreparedStatement prepStat1, prepStat2, prepStat3, prepStat4, prepStat7;
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	
 	/* Queries
@@ -145,6 +145,9 @@ public class OwnQueries extends JFrame
   				+ " WHERE dNum = empdNum AND dName = ?";
   		//this one gets the types to go into a dropdown list
   		String prepquery4 = "Select dName FROM DBDepartment";
+  		// Used for query 7
+  		String prepquery7 = "UPDATE dbcustomer SET cuAmountPaid=cuAmountPaid+?, cuAmountDue=cuAmountDue-?"
+                + " WHERE cuID= ?";
 	   	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
   		
   		//prepares the statements once 
@@ -153,6 +156,7 @@ public class OwnQueries extends JFrame
  			prepStat2 = con.prepareStatement(prepquery2);
  			prepStat3 = con.prepareStatement(prepquery3);
  			prepStat4 = con.prepareStatement(prepquery4);
+ 			prepStat7 = con.prepareStatement(prepquery7);
   		}
   		catch (SQLException e) {
   			outputArea.setText(e.getMessage());
@@ -177,6 +181,8 @@ public class OwnQueries extends JFrame
   			process5();
   		else if (e.getSource() == queryButton[6] ) 
   			process6();
+  		else if (e.getSource() == queryButton[7] )
+            process7();
 
   	}
   	
@@ -204,12 +210,13 @@ public class OwnQueries extends JFrame
 				Statement stmt = con.createStatement();
 				// run update and show how many rows have been affectd
 				int rowsAffected = stmt.executeUpdate(query);
-				JOptionPane.showMessageDialog(this, 
-						rowsAffected + " rows Affected");
+				JOptionPane.showMessageDialog(this, rowsAffected + " rows Affected");
 				//  clear table
 				tableResults.clearTable();
-				Integer option2 = JOptionPane.showConfirmDialog(this, "Would you like to view the differences in previous amount due and the current amount due?");
 				
+				// If the user want to view changes
+				Integer option2 = JOptionPane.showConfirmDialog(this, "Would you like to view the differences in previous amount due and the current amount due?");
+				// Needs modification
 				if(option == 0){
 					// Show a table which shows differenes
 					query = "SELECT cuName,CONCAT(cuAmountDue*2) AS 'Old Amount Due',"
@@ -488,9 +495,39 @@ public class OwnQueries extends JFrame
 	
 	public void process6() {
 	}
-
-
 	
-
-	
+	public void process7() {
+		 try {
+	            //get balance limit from user
+	            String s = JOptionPane.showInputDialog(this, "Enter the customer ID: " );
+	            //if data entered
+	            if (s != null) {
+	                //convert from text to integer
+	                int sInt = Integer.parseInt(s);
+	                //set parameter in prepared statement
+	                prepStat7.setInt(3,sInt);
+	                //run query and obtain result set
+	                String q = JOptionPane.showInputDialog(this, "Enter the amount the customer paid: " );
+	                
+	                if (s != null) {
+		                //convert from text to integer
+		                int qInt = Integer.parseInt(q);
+		                //set parameter in prepared statement
+		                prepStat7.setInt(1,qInt);
+		                prepStat7.setInt(2,qInt);
+		                //run query and obtain result set
+		                int rowsAffected = prepStat7.executeUpdate();
+						JOptionPane.showMessageDialog(this, rowsAffected + " rows Affected");
+		                outputArea.setText("Customer's record updated.");
+	            }
+	            else {
+	                outputArea.setText("no input entered!");
+	                tableResults.clearTable();
+	            }
+            }
+		 }
+	        catch (SQLException e){
+	            outputArea.setText(e.getMessage());
+	        }
+		}	
 }
