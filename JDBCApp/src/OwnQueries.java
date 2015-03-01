@@ -28,7 +28,7 @@ public class OwnQueries extends JFrame
 	PreparedStatement prepStat1, prepStat2, prepStat3, prepStat4;
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	
-	/*
+	/* Queries
 	 * Set of queries that needs to be can be added:
 	 * Giving discounts:
 	 * UPDATE dbcustomer SET cuAmountDue = IF(cuEventsBooked <= 5, cuAmountDue*(1-cuEventsBooked*0.10),cuAmountDue*0.5) WHERE cuAmountDue > 0 AND cuEventsBooked > 1;
@@ -103,7 +103,7 @@ public class OwnQueries extends JFrame
 	   	
 	   	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	   	//change the button texts in this section,  each button is linked with a process of its own number.
-	   	queryButton[0] = new JButton("Give all customers discount");
+	   	queryButton[0] = new JButton("Give loyal customers discount");
 	   	queryButton[1] = new JButton("Update Customer Detials (Events Booked)");
 		queryButton[2] = new JButton("Update Customer Detials (Fee Status)");
 	   	queryButton[3] = new JButton("Give 1 year old employees a raise");  	
@@ -188,11 +188,46 @@ public class OwnQueries extends JFrame
   
   	//selects some data and puts it into the  table
 	public void process0() {
-		/*
-
-		 */
 		
+		String query = "UPDATE dbcustomer "
+				// For testing purpose, amount is divided by 2. To undo it, multiply by 2
+				//+ "SET cuAmountDue = IF(cuEventsBooked <= 5, cuAmountDue*2, cuAmountDue*2)"
+				+ "SET cuAmountDue = IF(cuEventsBooked <= 5, cuAmountDue*(1-cuEventsBooked*0.10),cuAmountDue*0.5) "
+				+ "WHERE cuAmountDue > 0 AND cuEventsBooked > 1";
 		
+		try{
+			// Option is based on the choice selected, 0 for YES, 1 for NO and 2 for Cancel
+			Integer option = JOptionPane.showConfirmDialog(this, "Are you sure you want to give discount to loyal customers?");
+			
+			if(option == 0){
+				// create statement
+				Statement stmt = con.createStatement();
+				// run update and show how many rows have been affectd
+				int rowsAffected = stmt.executeUpdate(query);
+				JOptionPane.showMessageDialog(this, 
+						rowsAffected + " rows Affected");
+				//  clear table
+				tableResults.clearTable();
+				Integer option2 = JOptionPane.showConfirmDialog(this, "Would you like to view the differences in previous amount due and the current amount due?");
+				
+				if(option == 0){
+					// Show a table which shows differenes
+					query = "SELECT cuName,CONCAT(cuAmountDue*2) AS 'Old Amount Due',"
+							+ "CONCAT(cuAmountDue) AS 'New Amount Due',"
+							+ "((cuAmountDue*2)-cuAmountDue) AS 'Difference' "
+							+ " FROM dbcustomer";
+					
+					ResultSet resSet = stmt.executeQuery(query); 
+					tableResults.clearTable();
+					tableResults.formatTable(resSet);
+				}
+			}
+		}
+		catch(SQLException e){
+			outputArea.setText(e.getMessage());
+		}
+	}
+		/* Orignal process 0
 		String query = "SELECT lastname, firstnames, dateOfBirth  FROM DBEmployee "
 			 + "WHERE dateOfBirth < '1960-01-01' ORDER BY dateOfBirth DESC" ; 
 		try
@@ -219,8 +254,8 @@ public class OwnQueries extends JFrame
 			outputArea.setText(e.getMessage());
 		}
 	}
-	
-
+	*/
+		
 	//uses a prepared statement consisting of a parameterised query prepStat1
 	//finds all depts where someone has a salary  less that a limit supplied by user
 	public void process1() {
