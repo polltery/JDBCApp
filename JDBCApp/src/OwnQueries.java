@@ -9,7 +9,9 @@ This class needs to be customised for each database wherever there is a line //+
 import java.awt.*;
 import java.util.*;
 import java.awt.event.*;
+
 import javax.swing.*;
+
 import java.sql.*;
 
 public class OwnQueries extends JFrame 
@@ -100,8 +102,8 @@ public class OwnQueries extends JFrame
 	   	p1.setLayout(new GridLayout (7,1));
 	   	
 	   	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
-	   	//change the button texts in this section
-	   	queryButton[0] = new JButton("Give all Customer discounts");
+	   	//change the button texts in this section,  each button is linked with a process of its own number.
+	   	queryButton[0] = new JButton("Give all customers discount");
 	   	queryButton[1] = new JButton("Update Customer Detials (Events Booked)");
 		queryButton[2] = new JButton("Update Customer Detials (Fee Status)");
 	   	queryButton[3] = new JButton("Give 1 year old employees a raise");  	
@@ -185,7 +187,12 @@ public class OwnQueries extends JFrame
   	//DELETE EXISTING CODE IF YOU con't use all the buttons
   
   	//selects some data and puts it into the  table
-	public void process0() {     
+	public void process0() {
+		/*
+
+		 */
+		
+		
 		String query = "SELECT lastname, firstnames, dateOfBirth  FROM DBEmployee "
 			 + "WHERE dateOfBirth < '1960-01-01' ORDER BY dateOfBirth DESC" ; 
 		try
@@ -211,8 +218,6 @@ public class OwnQueries extends JFrame
 		catch (SQLException e){
 			outputArea.setText(e.getMessage());
 		}
-			
-			
 	}
 	
 
@@ -323,11 +328,31 @@ public class OwnQueries extends JFrame
 	}
 	
 	
+	//View employee details: Name, Department and Work location
+		public void process4() {
+		
+		//Query information
+		outputArea.append("This query lists all the employees, their department, work location and their manager");
+		
+		  String query = "SELECT CONCAT(emFirstName,' ',emLastName) AS 'Employee Name',"
+				  + "CONCAT(veName) AS 'Venue', CONCAT(deName) AS 'Department',"
+				  + "CONCAT(emManager) AS 'Manager' " 
+				  + "FROM dbemployee,dbvenue,dbdepartment "
+				  + "WHERE emWorkVenueID = veID AND emDepartmentID = deID";
+		 
+		  try{
+		  		Statement stmt = con.createStatement();		  		
+		  		ResultSet resSet = stmt.executeQuery(query);
+		  		tableResults.clearTable();
+		  		tableResults.formatTable(resSet);
+	  		   
+		  	}		
+		  	catch (SQLException e){
+		  		outputArea.setText(e.getMessage());
+		  	}
+		}
 	
-	//displays employee names
-	//the user supplies the salary limit and gender
-	public void process4() {
-
+		/*
 		try {
 	
 			//Define heading
@@ -367,6 +392,7 @@ public class OwnQueries extends JFrame
 			outputArea.setText("Number Format Error " + nfe.getMessage());
 		}
 	}
+	*/
 	
 	//runs one query to get the list of department names
 	//then the user chooses one
