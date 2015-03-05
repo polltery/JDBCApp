@@ -20,17 +20,16 @@ public class OwnQueries extends JFrame
   	JTextArea outputArea;
   	QueryTable tableResults;
 	Connection con;
-	final static int NUM_BUTTONS = 12;
-	JButton queryButton[] = new JButton[NUM_BUTTONS];;
-	
-   	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
+	final static int NUM_BUTTONS = 8;
+	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	//add more prepared statements here if you need more
-	PreparedStatement prepStat1, prepStat2, prepStat3, prepStat4, prepStat7;
+	PreparedStatement prepStat0, prepStat2, prepStat3, prepStat4, prepStat7;
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	
 	/* Queries
 	 * Set of queries that needs to be can be added:
 	 * Giving discounts:
+	 * UPDATE dbcustomer SET cuAmountDue = cuAmountDue(1-cuEventsBooked*?) WHERE cuAmountDue > 0 AND cuEventsBooked >= ?
 	 * UPDATE dbcustomer SET cuAmountDue = IF(cuEventsBooked <= 5, cuAmountDue*(1-cuEventsBooked*0.10),cuAmountDue*0.5) WHERE cuAmountDue > 0 AND cuEventsBooked > 1;
 	 * 
 	 * Updating customer stats:
@@ -59,7 +58,9 @@ public class OwnQueries extends JFrame
 	 *
 	 */
 	
-  	/////////////////////////////////////////////////////////////////
+  	JButton queryButton[] = new JButton[NUM_BUTTONS];
+
+	/////////////////////////////////////////////////////////////////
   	//Constructor sets up frame with 
   	//	an area for SQL entry 
   	//	a table for results
@@ -103,18 +104,22 @@ public class OwnQueries extends JFrame
 	   	
 	   	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	   	//change the button texts in this section,  each button is linked with a process of its own number.
-	   	queryButton[0] = new JButton("Give loyal customers discount");
-	   	queryButton[1] = new JButton("Update Customer Detials (Events Booked)");
-		queryButton[2] = new JButton("Update Customer Detials (Fee Status)");
-	   	queryButton[3] = new JButton("Give 1 year old employees a raise");  	
-	   	queryButton[4] = new JButton("View employee details");  	
-	   	queryButton[5] = new JButton("View Money Flow of the company (Expenditure)");
-	   	queryButton[6] = new JButton("View Money Flow of the company (Income)");  	
-	   	queryButton[7] = new JButton("Update customer amount paid (Some amount)");
-	   	queryButton[8] = new JButton("Update customer amount paid (All amount)");
-	   	queryButton[9] = new JButton("View upcoming event(s) (Filter by Date)");
-	   	queryButton[10] = new JButton("View upcoming event(s) (Filter by Location");
-	   	queryButton[11] = new JButton("");
+	   	// 2 Inputs: 1. Discount 2. No. of events customers have booked in the past
+	   	queryButton[0] = new JButton("Give discount to customers");
+	   	//
+	   	queryButton[1] = new JButton("Update Customer Detials (Events Booked & Fee Status)");
+		// 2 Inputs: 1. Minimum no. of years employee has worked 2. Raise amount  
+	   	queryButton[2] = new JButton("Give employees a raise");
+	   	//
+	   	queryButton[3] = new JButton("View employee details");  	
+	   	// 
+	   	queryButton[4] = new JButton("View Money Flow of the company (Expenditure or Income)");  	
+	   	// 2 Inputs: 1. Option 2. Amount
+	   	queryButton[5] = new JButton("Update customer amount paid (Some amount or All amount)");
+	   	// 3 Inputs: 1. Option 2. Date (Date picker) 3. Location (Dropdown)
+	   	queryButton[6] = new JButton("View upcoming event(s) (Filter by Date or Location)");
+	   	//
+	   	queryButton[7] = new JButton("");
 	   	
 	   	//TODO: Similar queries will be grouped and user will get an option on which specific query needs to be performed
 
@@ -132,14 +137,13 @@ public class OwnQueries extends JFrame
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
   	//set up all your prepared statements here
   	public void prepareStatements() {
+  		//used in process0
+  		String prepquery0 = "UPDATE dbcustomer SET cuAmountDue = cuAmountDue*(1-cuEventsBooked*?) WHERE cuAmountDue > 0 AND cuEventsBooked >= ?";
   		//used in process1
-  		String prepquery1 = "SELECT DISTINCT dName " 
-  			+ " FROM DBDepartment, DBEmployee "
-  		 	+	" WHERE dNum = empdNUm AND salary < ? ";   
+  		String prepquery2 = "UPDATE dbemployee SET emSalary = emSalary+? WHERE NOW() > DATE_ADD(emJoinDate,INTERVAL ? YEAR);";   
   		//used in process5
-  		String prepquery2= "SELECT firstnames, lastname FROM DBEmployee "
+  		String prepqueryX = "SELECT firstnames, lastname FROM DBEmployee "
   			+ " WHERE salary < ? AND empdNum = ? ";
-
   		//the next 2 queries used in process 5
   		String prepquery3 = "Select * from DBEmployee, DBDepartment  "
   				+ " WHERE dNum = empdNum AND dName = ?";
@@ -152,7 +156,7 @@ public class OwnQueries extends JFrame
   		
   		//prepares the statements once 
   		try {
-  			prepStat1 = con.prepareStatement(prepquery1);
+  			prepStat0 = con.prepareStatement(prepquery0);
  			prepStat2 = con.prepareStatement(prepquery2);
  			prepStat3 = con.prepareStatement(prepquery3);
  			prepStat4 = con.prepareStatement(prepquery4);
@@ -187,167 +191,112 @@ public class OwnQueries extends JFrame
   	}
   	
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
+  	// CUSTOM METHODS
+  	
+  	public void drawTable(String tableName){
+  		String query = "SELECT * FROM " + tableName;
+  		Statement stmt;
+		try {
+			stmt = con.createStatement();
+			ResultSet resSet = stmt.executeQuery(query);
+			tableResults.clearTable();
+			tableResults.formatTable(resSet);
+		} catch (SQLException e) {
+			outputArea.setText(e.getMessage());
+		}	
+  	}
+  	
+  	// CUSTOM METHODS END
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
   	//PUT YOUR OWN CODE INTO EACH PROCESS
   	//alter the comments!
   	//DELETE EXISTING CODE IF YOU con't use all the buttons
   
-  	//selects some data and puts it into the  table
+  	// Giving discounts:
 	public void process0() {
-		
-		String query = "UPDATE dbcustomer "
-				// For testing purpose, amount is divided by 2. To undo it, multiply by 2
-				//+ "SET cuAmountDue = IF(cuEventsBooked <= 5, cuAmountDue*2, cuAmountDue*2)"
-				+ "SET cuAmountDue = IF(cuEventsBooked <= 5, cuAmountDue*(1-cuEventsBooked*0.10),cuAmountDue*0.5) "
-				+ "WHERE cuAmountDue > 0 AND cuEventsBooked > 1";
-		
 		try{
-			// Option is based on the choice selected, 0 for YES, 1 for NO and 2 for Cancel
-			Integer option = JOptionPane.showConfirmDialog(this, "Are you sure you want to give discount to loyal customers?");
-			
-			if(option == 0){
-				// create statement
-				Statement stmt = con.createStatement();
-				// run update and show how many rows have been affectd
-				int rowsAffected = stmt.executeUpdate(query);
-				JOptionPane.showMessageDialog(this, rowsAffected + " rows Affected");
-				//  clear table
-				tableResults.clearTable();
-				
-				// If the user want to view changes
-				Integer option2 = JOptionPane.showConfirmDialog(this, "Would you like to view the differences in previous amount due and the current amount due?");
-				// Needs modification
-				if(option == 0){
-					// Show a table which shows differenes
-					query = "SELECT cuName,CONCAT(cuAmountDue*2) AS 'Old Amount Due',"
-							+ "CONCAT(cuAmountDue) AS 'New Amount Due',"
-							+ "((cuAmountDue*2)-cuAmountDue) AS 'Difference' "
-							+ " FROM dbcustomer";
-					
-					ResultSet resSet = stmt.executeQuery(query); 
-					tableResults.clearTable();
-					tableResults.formatTable(resSet);
+			//get balance limit from user
+            String minEvents = JOptionPane.showInputDialog(this, "Minimun events customer should have booked: " );
+            //if data entered
+            if (minEvents != null){
+            	int minEventsInt = Integer.parseInt(minEvents);
+            	prepStat0.setInt(2,minEventsInt);
+            	String discount = JOptionPane.showInputDialog(this, "Please enter how much discount (in percentage 0-100) would you like to give: " );
+				if(discount != null){
+					int discountInt = Integer.parseInt(discount);
+	            	prepStat0.setInt(1,discountInt/100);
+	            	int rowsAffected = prepStat0.executeUpdate();
+					JOptionPane.showMessageDialog(this, rowsAffected + " rows Affected");
+					int option = JOptionPane.showConfirmDialog(this, "View customer table?");
+					if(option == 0){
+						drawTable("dbcustomer");
+					}
 				}
-			}
+				else{
+					outputArea.setText("Please enter a numeric value between 0 and 100");
+				}
+            	}
+            else{
+            	outputArea.setText("Please enter a numeric value greater than 0");
+            }
 		}
 		catch(SQLException e){
-			outputArea.setText(e.getMessage());
+			outputArea.append(e.getMessage());
 		}
 	}
-		/* Orignal process 0
-		String query = "SELECT lastname, firstnames, dateOfBirth  FROM DBEmployee "
-			 + "WHERE dateOfBirth < '1960-01-01' ORDER BY dateOfBirth DESC" ; 
-		try
-		{
-			//create statements
-			Statement s1 = con.createStatement();
-			//run query and store results in result set
-			ResultSet resSet = s1.executeQuery(query);
-			//clear table
-			tableResults.clearTable();
-			//display in text area
-			outputArea.setText("AccountNos and Types\n");
-			while(resSet.next() ) {
-			    outputArea.append(resSet.getString(2));
-			    outputArea.append (" ");
-			    outputArea.append(resSet.getString(1));
-			    outputArea.append (" : ");
-			    outputArea.append(resSet.getString(3).substring(0,4));  //year only
-			    outputArea.append("\n");
-			 }
-			
-		}
-		catch (SQLException e){
-			outputArea.setText(e.getMessage());
-		}
-	}
-	*/
-		
-	//uses a prepared statement consisting of a parameterised query prepStat1
-	//finds all depts where someone has a salary  less that a limit supplied by user
-	public void process1() {
 
-		try
-		{
-			//get balance limit from user
-			String s = JOptionPane.showInputDialog(this, "Enter salary limit: " );
-			//if data entered
-			if (s != null) {
-				//convert from text to integer
-				int sInt = Integer.parseInt(s);
-				//set parameter in prepared statement
-				prepStat1.setInt(1,sInt);
-				//run query and obtain result set
-				ResultSet resSet = prepStat1 .executeQuery();
-				//output heading including limit 
-				outputArea.setText("Departments  with salary < " + sInt + "\n");
-				//loop for each result
-				while (resSet.next()) {
-					//display type in text area - type is in first column of result
-					outputArea.append(resSet.getString(1) + "\n");
-					//clear table (not using it)
-					tableResults.clearTable();
+	// Updating customer stats:
+	public void process1() {
+		try{
+			int option = JOptionPane.showConfirmDialog(this, "This will update the fee status and no. of events booked for all customers. Continue?");
+			if(option == 0){
+				String query = "UPDATE dbcustomer SET cuEventsBooked = (SELECT COUNT(evCustomerID) FROM dbevent WHERE evCustomerID = cuID)";
+				Statement stmt = con.createStatement();
+				int rowsUpdated = stmt.executeUpdate(query);
+				JOptionPane.showMessageDialog(this, rowsUpdated + " rows Affected (Events booked update)");
+				query = "UPDATE dbcustomer SET cuFeeStatus = IF(cuAmountDue > 0,'Due','Paid')";
+				rowsUpdated = stmt.executeUpdate(query);
+				JOptionPane.showMessageDialog(this, rowsUpdated + " rows Affected (Fee status update)");
+				option = JOptionPane.showConfirmDialog(this, "View customer table?");
+				if(option == 0){
+					drawTable("dbcustomer");
 				}
 			}
-			//if user cancelled, clear both output area and table
-			else {
-				outputArea.setText("no input entered");
-				tableResults.clearTable();
-			}
-			
-		}
-		catch (SQLException e){
+		}catch(SQLException e){
 			outputArea.setText(e.getMessage());
 		}
-			
-			
+		
 	}
-	
-	//DELETE/ INSERTION 
-	//just reports how many rows altered
-	//you can view the table from the main switchboard to see the result in the records
+		
+	// Select employee(s) and perform updates:
 	public void process2() {
 		try {
-			//create a statement
-			Statement stmt = con.createStatement();
-			
-			//define an insert
-			String insertQuery = "INSERT INTO DBProject VALUES "
-			              + " (23,'temp2',5)";
-			//execute the insert and find how many rows affected
-			int howManyRowsInserted = stmt.executeUpdate(insertQuery);
-			//output heading
-			outputArea.append("Trying to insert project temp2\n");
-			//output how many rows inserted
-			outputArea.append("Rows inserted = " + howManyRowsInserted + "\n");
-			
-			//maybe put a query here to prove it
-			
-			//define a delete
-			String delQuery = "DELETE FROM DBProject WHERE pName = 'temp2'";
-			//execute the delete and find how many rows affected
-			int howManyRowsDeleted= stmt.executeUpdate(delQuery);
-			//set up heading
-			outputArea.append("Trying to delete project temp2\n");
-			//output result
-			outputArea.append("Rows deleted = " + howManyRowsDeleted + "\n");
-			
-
-			//clear table - not using it
-			tableResults.clearTable();
-
-
-		}
-		catch (SQLException e){
-			System.out.println(e.getMessage());
-		}
+			String minWorkYrs = JOptionPane.showInputDialog(this, "Minimum no. of years employee should have worked: ");
+			if (minWorkYrs != null){
+				prepStat2.setInt(2, Integer.parseInt(minWorkYrs));
+				String raiseAmt = JOptionPane.showInputDialog(this, "How much raise (in amount) would you like to give?: ");
+				if(raiseAmt != null){
+					prepStat2.setFloat(1, Float.parseFloat(raiseAmt));
+					int rowsAffected = prepStat2.executeUpdate();
+					JOptionPane.showMessageDialog(this, rowsAffected + " row(s) Affected");
+					int option = JOptionPane.showConfirmDialog(this, "View employee table?");
+					if(option == 0){
+						drawTable("dbemployee");
+					}
+				}
+				else{
+					outputArea.setText("Please enter a valid numeric value");
+				}
+			}
+			else{
+				outputArea.setText("Please enter a valid numeric value between 0 and 5");
+			}
+			}catch(SQLException e){
+				outputArea.setText(e.getMessage());
+			}
 	}
-	
-	//AN UPDATE QUERY
-	//we expect this to return 0 rows 
-	//because ss number does not exist
-	//I woulnd't expect you to provide a failure in your coursework -
-	//this is just for demonstration purposes
+
+	// TODO: Update process3
 	public void process3() {
 		try {
 			//create statement
@@ -369,7 +318,6 @@ public class OwnQueries extends JFrame
 		}
 	}
 	
-	
 	//View employee details: Name, Department and Work location
 		public void process4() {
 		
@@ -377,7 +325,7 @@ public class OwnQueries extends JFrame
 		outputArea.append("This query lists all the employees, their department, work location and their manager");
 		
 		  String query = "SELECT CONCAT(emFirstName,' ',emLastName) AS 'Employee Name',"
-				  + "CONCAT(veName) AS 'Venue', CONCAT(deName) AS 'Department',"
+				  + "CONCAT(veName) AS 'Venue', (deName) AS 'Department',"
 				  + "CONCAT(emManager) AS 'Manager' " 
 				  + "FROM dbemployee,dbvenue,dbdepartment "
 				  + "WHERE emWorkVenueID = veID AND emDepartmentID = deID";
@@ -393,48 +341,6 @@ public class OwnQueries extends JFrame
 		  		outputArea.setText(e.getMessage());
 		  	}
 		}
-	
-		/*
-		try {
-	
-			//Define heading
-			outputArea.append("This query lists employee names with given salary limit in dept\n");
-
-	
-			//valid types are current, deposit, mortgage, investment
-			String sal= JOptionPane.showInputDialog(this,"Enter an salary limit : ");
-			String dep = JOptionPane.showInputDialog(this,"Enter dept num  ");
-			if (sal != null && dep != null) {
-
-				//supply the parameter(s)
-				prepStat2.setInt(1, Integer.parseInt(sal));   //convert to integer
-				prepStat2.setInt(2,  Integer.parseInt(dep));			
-				//execture the query
-				ResultSet resSet = prepStat2.executeQuery();
-		
-				//print heading including parameters
-				outputArea.setText("These are the names of employees earning less than" 
-				         + sal + " in department " + dep + "\n");
-				tableResults.clearTable();
-				while (resSet.next())   
-				{
-					tableResults.formatTable(resSet);
-					//outputArea.append(prs.getInt(1) + "\n");  //print integer from column 1
-				}
-			}
-			else {
-				outputArea.setText("no input entered");
-				tableResults.clearTable();
-			}
-		}
-		catch (SQLException e1) {
-			outputArea.setText(e1.getMessage());
-		}
-		catch (NumberFormatException nfe) {   //this error message could be more precise
-			outputArea.setText("Number Format Error " + nfe.getMessage());
-		}
-	}
-	*/
 	
 	//runs one query to get the list of department names
 	//then the user chooses one
