@@ -24,7 +24,7 @@ public class OwnQueries extends JFrame
 	final static int NUM_BUTTONS = 8;
 	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	//add more prepared statements here if you need more
-	PreparedStatement prepStat0, prepStat2, prepStat3, prepStat4, prepStat7;
+	PreparedStatement prepStat0, prepStat2, prepStat4, prepStat5,prepStat5Secondary;
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
   	JButton queryButton[] = new JButton[NUM_BUTTONS];
@@ -110,26 +110,21 @@ public class OwnQueries extends JFrame
   		String prepquery0 = "UPDATE dbcustomer SET cuAmountDue = cuAmountDue*(1-cuEventsBooked*?) WHERE cuAmountDue > 0 AND cuEventsBooked >= ?";
   		//used in process1
   		String prepquery2 = "UPDATE dbemployee SET emSalary = emSalary+? WHERE NOW() > DATE_ADD(emJoinDate,INTERVAL ? YEAR);";   
-  		//used in process5
-  		String prepqueryX = "SELECT firstnames, lastname FROM DBEmployee "
-  			+ " WHERE salary < ? AND empdNum = ? ";
-  		//the next 2 queries used in process 5
-  		String prepquery3 = "Select * from DBEmployee, DBDepartment  "
-  				+ " WHERE dNum = empdNum AND dName = ?";
   		//this one gets the types to go into a dropdown list
   		String prepquery4 = "Select dName FROM DBDepartment";
-  		// Used for query 7
-  		String prepquery7 = "UPDATE dbcustomer SET cuAmountPaid=cuAmountPaid+?, cuAmountDue=cuAmountDue-?"
+  		// Used for query customer transactions
+  		String prepquery5 = "UPDATE dbcustomer SET cuAmountPaid=cuAmountPaid+?, cuAmountDue=cuAmountDue-?"
                 + " WHERE cuID= ?";
+  		String prepquery5Secondary = "UPDATE dbcustomer SET cuAmountPaid=(cuAmountPaid+cuAmountDue),cuAmountDue=0 WHERE cuID = ?";
 	   	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
   		
   		//prepares the statements once 
   		try {
   			prepStat0 = con.prepareStatement(prepquery0);
  			prepStat2 = con.prepareStatement(prepquery2);
- 			prepStat3 = con.prepareStatement(prepquery3);
  			prepStat4 = con.prepareStatement(prepquery4);
- 			prepStat7 = con.prepareStatement(prepquery7);
+ 			prepStat5 = con.prepareStatement(prepquery5);
+ 			prepStat5Secondary = con.prepareStatement(prepquery5Secondary);
   		}
   		catch (SQLException e) {
   			outputArea.setText(e.getMessage());
@@ -181,7 +176,7 @@ public class OwnQueries extends JFrame
   	//alter the comments!
   	//DELETE EXISTING CODE IF YOU con't use all the buttons
   
-  	// Giving discounts:
+  	// Process 0: Giving discounts
 	public void process0() {
 		try{
 			//get balance limit from user
@@ -306,6 +301,7 @@ public class OwnQueries extends JFrame
 			try{
 				Statement stmt = con.createStatement();
 				ResultSet resSet = stmt.executeQuery(query);
+				tableResults.clearTable();
 				tableResults.formatTable(resSet);
 			}
 			catch(SQLException e){
@@ -314,58 +310,72 @@ public class OwnQueries extends JFrame
 		}
 	}
 	
-	// TODO: Process 5: Customer transactions
+	// Process 5: Customer transactions
 	public void process5() {
-		try
-		{
-			//run the prepared query to get the department names
-			ResultSet resSet= prepStat4.executeQuery();
-			//define an array to hold all the names
-			ArrayList<String>  params = new ArrayList<String>();
-			//loop through the result set and get out the names
-			int count = 0;
-			while (resSet.next()){  //whilst more
-				//add result data to array
-				params.add(resSet.getString(1));
-				count++;
+		Object [] options = {"Some Amount","All Amount","Cancel"};
+		int option = JOptionPane.showOptionDialog(this,"Choose how much amount is being cleared by the customer?", "Customer Transaction", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+		if(option != 2){
+			if(option == 0){
+				try {
+		            //get balance limit from user
+		            String s = JOptionPane.showInputDialog(this, "Enter the customer ID: " );
+		            //if data entered
+		            if (s != null) {
+		                //convert from text to integer
+		                int sInt = Integer.parseInt(s);
+		                //set parameter in prepared statement
+		                prepStat5.setInt(3,sInt);
+		                //run query and obtain result set
+		                String q = JOptionPane.showInputDialog(this, "Enter the amount the customer paid: " );
+		                if (q != null) {
+			                //convert from text to float
+			                float qInt = Float.parseFloat(q);
+			                //set parameter in prepared statement
+			                prepStat5.setFloat(1,qInt);
+			                prepStat5.setFloat(2,qInt);
+			                //run query and obtain result set
+			                int rowsAffected = prepStat5.executeUpdate();
+							JOptionPane.showMessageDialog(this, rowsAffected + " rows Affected");
+			                outputArea.setText("Customer's record updated.");
+			                drawTable("dbcustomer");
+			            }
+			            else {
+			                outputArea.setText("No input entered!");
+			                tableResults.clearTable();
+			            }
+		            }
+		            else{
+		            	outputArea.setText("No input entered!");
+		            }
+				}
+				catch(SQLException e){
+					outputArea.setText(e.getMessage());
+				}
 			}
-			//find number of types in the result set
-			int size = params.size();
-			//define an array to populate the drop down list
-			Object[] possibilities = new Object[size];
-			//copy the types into the drop down list
-			for (int c = 0; c< size; c++){
-				possibilities[c] = params.get(c);
+			else if(option == 1){
+				try {
+		            //get balance limit from user
+		            String s = JOptionPane.showInputDialog(this, "Enter the customer ID: " );
+		            //if data entered
+		            if (s != null) {
+		                //convert from text to integer
+		                int sInt = Integer.parseInt(s);
+		                //set parameter in prepared statement
+		                prepStat5Secondary.setInt(1,sInt);
+		                //run query and obtain result set
+		                int rowsAffected = prepStat5Secondary.executeUpdate();
+						JOptionPane.showMessageDialog(this, rowsAffected + " rows Affected");
+		                outputArea.setText("Customer's record updated.");
+		                drawTable("dbcustomer");
+		            }
+		            else{
+		            	outputArea.setText("No input entered!");
+		            }
+				}
+				catch(SQLException e){
+					outputArea.setText(e.getMessage());
+				}
 			}
-			//get name from the user
-		    String s = (String) JOptionPane.showInputDialog(this, 
-		            "Choose",
-		            "Choose",
-		            JOptionPane.QUESTION_MESSAGE, 
-		            null, 
-		            possibilities, //list of values
-		            possibilities[0]);  //default
-
-			//If a string was returned
-			if ((s != null) && (s.length() > 0)) {
-				//set parameter in the query
-				prepStat3.setString(1,s);
-				//run the query to find all employees in this department
-				resSet = prepStat3.executeQuery();
-				//display in table
-				tableResults.formatTable(resSet);
-				outputArea.setText("list of employees in department = " + s);
-			}
-			else {
-				tableResults.clearTable();
-				outputArea.setText("No selection made");
-			}
-				
-
-		}
-		catch(SQLException ex)
-		{
-			outputArea.setText(ex.getMessage());
 		}
 	}
 	
@@ -373,39 +383,7 @@ public class OwnQueries extends JFrame
 	public void process6() {
 	}
 	
-	// TODO: Customer Transactions
+	// Process 7: Blank process
 	public void process7() {
-		 try {
-	            //get balance limit from user
-	            String s = JOptionPane.showInputDialog(this, "Enter the customer ID: " );
-	            //if data entered
-	            if (s != null) {
-	                //convert from text to integer
-	                int sInt = Integer.parseInt(s);
-	                //set parameter in prepared statement
-	                prepStat7.setInt(3,sInt);
-	                //run query and obtain result set
-	                String q = JOptionPane.showInputDialog(this, "Enter the amount the customer paid: " );
-	                
-	                if (s != null) {
-		                //convert from text to integer
-		                int qInt = Integer.parseInt(q);
-		                //set parameter in prepared statement
-		                prepStat7.setInt(1,qInt);
-		                prepStat7.setInt(2,qInt);
-		                //run query and obtain result set
-		                int rowsAffected = prepStat7.executeUpdate();
-						JOptionPane.showMessageDialog(this, rowsAffected + " rows Affected");
-		                outputArea.setText("Customer's record updated.");
-	            }
-	            else {
-	                outputArea.setText("no input entered!");
-	                tableResults.clearTable();
-	            }
-            }
 		 }
-	        catch (SQLException e){
-	            outputArea.setText(e.getMessage());
-	        }
-		}	
 }
