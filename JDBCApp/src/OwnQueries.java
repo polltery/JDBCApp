@@ -7,13 +7,18 @@ This class needs to be customised for each database wherever there is a line //+
 */
 
 import java.awt.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.awt.event.*;
 
 import javax.print.attribute.standard.OutputDeviceAssigned;
 import javax.swing.*;
 
+import com.sun.org.apache.xerces.internal.impl.xpath.regex.ParseException;
+
 import java.sql.*;
+import java.sql.Date;
 
 public class OwnQueries extends JFrame 
                       implements ActionListener
@@ -24,7 +29,7 @@ public class OwnQueries extends JFrame
 	final static int NUM_BUTTONS = 8;
 	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	//add more prepared statements here if you need more
-	PreparedStatement prepStat0, prepStat2, prepStat4, prepStat5,prepStat5Secondary;
+	PreparedStatement prepStat0, prepStat2, prepStat4, prepStat5,prepStat5Secondary,prepStat6,prepStat6Secondary;
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
   	JButton queryButton[] = new JButton[NUM_BUTTONS];
@@ -76,7 +81,7 @@ public class OwnQueries extends JFrame
 	   	// 2 Inputs: 1. Discount 2. No. of events customers have booked in the past
 	   	queryButton[0] = new JButton("Give discount to customers");
 	   	//
-	   	queryButton[1] = new JButton("Update Customer Detials (Events Booked & Fee Status)");
+	   	queryButton[1] = new JButton("Update Customer Detials");
 		// 2 Inputs: 1. Minimum no. of years employee has worked 2. Raise amount  
 	   	queryButton[2] = new JButton("Give employees a raise");
 	   	//
@@ -116,7 +121,10 @@ public class OwnQueries extends JFrame
   		String prepquery5 = "UPDATE dbcustomer SET cuAmountPaid=cuAmountPaid+?, cuAmountDue=cuAmountDue-?"
                 + " WHERE cuID= ?";
   		String prepquery5Secondary = "UPDATE dbcustomer SET cuAmountPaid=(cuAmountPaid+cuAmountDue),cuAmountDue=0 WHERE cuID = ?";
-	   	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
+	   	// Queries for viewing upcoming events
+  		String prepquery6 = "SELECT CONCAT(evName) AS 'Name', CONCAT(cuName) AS 'Held by', CONCAT(veName) AS 'Location', DATE_FORMAT(evStartDate, '%d %b%y') AS 'Start Date', DATEDIFF(evEndDate,evStartDate) AS 'Duration (Days)' FROM dbevent,dbcustomer,dbvenue WHERE evCustomerID = cuID AND evVenueID = veID AND evStartDate BETWEEN ? AND ?";
+  		String prepquery6Secondary = "SELECT CONCAT(evName) AS 'Name', CONCAT(cuName) AS 'Held by', DATE_FORMAT(evStartDate, '%d %b%y') AS 'Start Date', DATEDIFF(evEndDate,evStartDate) AS 'Duration (Days)' FROM dbevent,dbcustomer,dbvenue WHERE evCustomerID = cuID AND evVenueID = veID AND veID = ?";
+  		//++//++//++//++//++//++//++//++//++//++//++//++//++//++
   		
   		//prepares the statements once 
   		try {
@@ -125,6 +133,8 @@ public class OwnQueries extends JFrame
  			prepStat4 = con.prepareStatement(prepquery4);
  			prepStat5 = con.prepareStatement(prepquery5);
  			prepStat5Secondary = con.prepareStatement(prepquery5Secondary);
+ 			prepStat6 = con.prepareStatement(prepquery6);
+ 			prepStat6Secondary = con.prepareStatement(prepquery6Secondary);
   		}
   		catch (SQLException e) {
   			outputArea.setText(e.getMessage());
@@ -157,6 +167,7 @@ public class OwnQueries extends JFrame
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
   	// CUSTOM METHODS
   	
+  	// Draw a table of a given table name
   	public void drawTable(String tableName){
   		String query = "SELECT * FROM " + tableName;
   		Statement stmt;
@@ -168,6 +179,13 @@ public class OwnQueries extends JFrame
 		} catch (SQLException e) {
 			outputArea.setText(e.getMessage());
 		}	
+  	}
+  	
+  	public java.sql.Date parseDate(String dateStr) throws java.text.ParseException{
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		java.util.Date dateParsed = dateFormat.parse(dateStr);
+		java.sql.Date dateSQL = new java.sql.Date(dateParsed.getTime());
+  		return dateSQL;
   	}
   	
   	// CUSTOM METHODS END
@@ -287,7 +305,7 @@ public class OwnQueries extends JFrame
 	public void process4(){
 		Object [] options = {"Expenditure","Income","Cancel"};
 		String query = "";
-		int option = JOptionPane.showOptionDialog(this, "Please choose an option: ", "Money Flow", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+		int option = JOptionPane.showOptionDialog(this, "Please choose an option: ", "Money Flow", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[2]);
 		if(option != 2){
 			if(option == 1){
 				query = "SELECT SUM(cuAmountPaid) AS 'Income', SUM(cuAmountDue) AS 'Due Income', SUM(cuAmountPaid)+SUM(cuAmountDue) AS 'Potential Income' FROM dbcustomer";
@@ -313,7 +331,7 @@ public class OwnQueries extends JFrame
 	// Process 5: Customer transactions
 	public void process5() {
 		Object [] options = {"Some Amount","All Amount","Cancel"};
-		int option = JOptionPane.showOptionDialog(this,"Choose how much amount is being cleared by the customer?", "Customer Transaction", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+		int option = JOptionPane.showOptionDialog(this,"Choose how much amount is being cleared by the customer?", "Customer Transaction", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[2]);
 		if(option != 2){
 			if(option == 0){
 				try {
@@ -379,8 +397,53 @@ public class OwnQueries extends JFrame
 		}
 	}
 	
-	// TODO: Process 6: View upcoming event details by date or venue
+	// Process 6: View upcoming event details by date or venue
 	public void process6() {
+		Object [] options = {"Date","Venue","Cancel"};
+		int option = JOptionPane.showOptionDialog(this, 
+				"Filter by ", 
+				"View upcoming events", 
+				JOptionPane.DEFAULT_OPTION, 
+				JOptionPane.QUESTION_MESSAGE, 
+				null, options, 
+				options[2]);
+		if(option != 2){
+			if(option == 0){
+				String startDateStr = JOptionPane.showInputDialog(this, "Enter start date (YYYY-MM-DD)");
+				String endDateStr = JOptionPane.showInputDialog(this,"Enter end date (YYYY-MM-DD)");
+				try {
+					try {
+						prepStat6.setDate(1, parseDate(startDateStr));
+						prepStat6.setDate(2, parseDate(endDateStr));
+					} catch (java.text.ParseException e) {
+						outputArea.setText(e.getMessage());
+					}
+					ResultSet resSet = prepStat6.executeQuery();
+					tableResults.clearTable();
+					tableResults.formatTable(resSet);
+				} catch (SQLException e) {
+					outputArea.setText(e.getMessage());
+				}	
+			}
+			else if(option == 1){
+				drawTable("dbvenue");
+				String venue = JOptionPane.showInputDialog(this, "Enter Venue ID ");
+				if (venue != null){
+					int venueInt = Integer.parseInt(venue);
+					try {
+						prepStat6Secondary.setInt(1, venueInt);
+						ResultSet resSet = prepStat6Secondary.executeQuery();
+						tableResults.clearTable();
+						tableResults.formatTable(resSet);
+					}catch (SQLException e){
+						outputArea.setText(e.getMessage());
+					}
+				}
+				else{
+					outputArea.setText("Invalid venue ID");
+				}
+			}
+		}
 	}
 	
 	// Process 7: Blank process
