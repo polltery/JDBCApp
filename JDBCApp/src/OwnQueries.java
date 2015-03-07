@@ -10,6 +10,7 @@ import java.awt.*;
 import java.util.*;
 import java.awt.event.*;
 
+import javax.print.attribute.standard.OutputDeviceAssigned;
 import javax.swing.*;
 
 import java.sql.*;
@@ -25,39 +26,7 @@ public class OwnQueries extends JFrame
 	//add more prepared statements here if you need more
 	PreparedStatement prepStat0, prepStat2, prepStat3, prepStat4, prepStat7;
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
-	
-	/* Queries
-	 * Set of queries that needs to be can be added:
-	 * Giving discounts:
-	 * UPDATE dbcustomer SET cuAmountDue = cuAmountDue(1-cuEventsBooked*?) WHERE cuAmountDue > 0 AND cuEventsBooked >= ?
-	 * UPDATE dbcustomer SET cuAmountDue = IF(cuEventsBooked <= 5, cuAmountDue*(1-cuEventsBooked*0.10),cuAmountDue*0.5) WHERE cuAmountDue > 0 AND cuEventsBooked > 1;
-	 * 
-	 * Updating customer stats:
-	 * UPDATE dbcustomer SET cuEventsBooked = (SELECT COUNT(evCustomerID) FROM dbevent WHERE evCustomerID = cuID);
-	 * UPDATE dbcustomer SET cuFeeStatus = IF(cuAmountDue > 0,'Due','Paid');
-	 * 
-	 * Select employee(s) and perform updates:
-	 * UPDATE emSalary SET emSalary = emSalary+(emSalary*0.1) WHERE NOW() > DATE_ADD(emJoinDate,INTERVAL 1 YEAR);
-	 * 
-	 * Money Flow of the company:
-	 * SELECT SUM(cuAmountPaid) AS 'Income', SUM(cuAmountDue) AS 'Due Income', SUM(cuAmountPaid)+SUM(cuAmountDue) AS 'Potential Income' FROM dbcustomer;
-	 * SELECT SUM(emSalary) AS 'costs per month' FROM dbemployee;
-	 * 
-	 * Employee details:
-	 * SELECT CONCAT(emFirstName,' ',emLastName) AS 'Employee Name', veName AS 'Venue', deName AS 'Departmen', emManager AS 'Manager' FROM dbemployee,dbvenue,dbdepartment WHERE emWorkVenueID = veID AND emDepartmentID = deID;
-	 *
-	 *
-	 * Set of queries that will need extra coding:
-	 * Customer transactions
-	 * UPDATE dbcustomer SET cuAmountPaid=(cuAmountPaid+cuAmountDue),cuAmount=0 WHERE cuID = 1;
-	 * UPDATE dbcustomer SET cuAmountPaid=cuAmountPaid+25,cuAmountDue=cuAmountDue-25 WHERE cuID =2;
-	 * 
-	 * Finding upcoming event detals:
-	 * SELECT evName AS 'Name', cuName AS 'Held by', veName AS 'Location', DATE_FORMAT(evStartDate, '%d %b%y') AS 'Start Date', DATEDIFF(evEndDate,evStartDate) AS 'Duration (Days)' FROM dbevent,dbcustomer,dbvenue WHERE evCustomerID = cuID AND evVenueID = veID AND evStartDate BETWEEN '2005-01-01' AND '2015-01-01';
-	 * SELECT evName AS 'Name', cuName AS 'Held by', DATE_FORMAT(evStartDate, '%d %b%y') AS 'Start Date', DATEDIFF(evEndDate,evStartDate) AS 'Duration (Days)' FROM dbevent,dbcustomer,dbvenue WHERE evCustomerID = cuID AND evVenueID = veID AND evStartDate = 1;
-	 *
-	 */
-	
+
   	JButton queryButton[] = new JButton[NUM_BUTTONS];
 
 	/////////////////////////////////////////////////////////////////
@@ -113,11 +82,11 @@ public class OwnQueries extends JFrame
 	   	//
 	   	queryButton[3] = new JButton("View employee details");  	
 	   	// 
-	   	queryButton[4] = new JButton("View Money Flow of the company (Expenditure or Income)");  	
+	   	queryButton[4] = new JButton("View Money Flow of the company");  	
 	   	// 2 Inputs: 1. Option 2. Amount
-	   	queryButton[5] = new JButton("Update customer amount paid (Some amount or All amount)");
+	   	queryButton[5] = new JButton("Update customer amount paid");
 	   	// 3 Inputs: 1. Option 2. Date (Date picker) 3. Location (Dropdown)
-	   	queryButton[6] = new JButton("View upcoming event(s) (Filter by Date or Location)");
+	   	queryButton[6] = new JButton("View upcoming events");
 	   	//
 	   	queryButton[7] = new JButton("");
 	   	
@@ -245,7 +214,7 @@ public class OwnQueries extends JFrame
 		}
 	}
 
-	// Updating customer stats:
+	// Process 1: Updating customer stats
 	public void process1() {
 		try{
 			int option = JOptionPane.showConfirmDialog(this, "This will update the fee status and no. of events booked for all customers. Continue?");
@@ -268,7 +237,7 @@ public class OwnQueries extends JFrame
 		
 	}
 		
-	// Select employee(s) and perform updates:
+	// Process 2: Select employee(s) and perform updates
 	public void process2() {
 		try {
 			String minWorkYrs = JOptionPane.showInputDialog(this, "Minimum no. of years employee should have worked: ");
@@ -296,36 +265,14 @@ public class OwnQueries extends JFrame
 			}
 	}
 
-	// TODO: Update process3
+	// Process 3: View employee details: Name, Department and Work location
 	public void process3() {
-		try {
-			//create statement
-			Statement stmt = con.createStatement();
-			//define update
-			String updateQuery = "UPDATE DBEmployee SET salary = 25000 "
-			                   + " WHERE ssn = 777 ";
-			//run update and get how many rows affected
-			int howManyRowsUpdated = stmt.executeUpdate(updateQuery);
-			//output heading
-			outputArea.setText("Example of a failed update\n");
-			//output how many rows updated
-			outputArea.append("Rows updated = " + howManyRowsUpdated + "\n");
-			//clear table - not using it
-			tableResults.clearTable();
-		}
-		catch (SQLException e){
-			outputArea.setText(e.getMessage());
-		}
-	}
-	
-	//View employee details: Name, Department and Work location
-		public void process4() {
 		
 		//Query information
 		outputArea.append("This query lists all the employees, their department, work location and their manager");
 		
 		  String query = "SELECT CONCAT(emFirstName,' ',emLastName) AS 'Employee Name',"
-				  + "CONCAT(veName) AS 'Venue', (deName) AS 'Department',"
+				  + "CONCAT(veName) AS 'Venue', CONCAT(deName) AS 'Department',"
 				  + "CONCAT(emManager) AS 'Manager' " 
 				  + "FROM dbemployee,dbvenue,dbdepartment "
 				  + "WHERE emWorkVenueID = veID AND emDepartmentID = deID";
@@ -335,16 +282,39 @@ public class OwnQueries extends JFrame
 		  		ResultSet resSet = stmt.executeQuery(query);
 		  		tableResults.clearTable();
 		  		tableResults.formatTable(resSet);
-	  		   
 		  	}		
 		  	catch (SQLException e){
 		  		outputArea.setText(e.getMessage());
 		  	}
-		}
+	}
 	
-	//runs one query to get the list of department names
-	//then the user chooses one
-	//then the list of employees in this department are displayed
+	// Process 4: View money Flow of the company
+	public void process4(){
+		Object [] options = {"Expenditure","Income","Cancel"};
+		String query = "";
+		int option = JOptionPane.showOptionDialog(this, "Please choose an option: ", "Money Flow", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+		if(option != 2){
+			if(option == 1){
+				query = "SELECT SUM(cuAmountPaid) AS 'Income', SUM(cuAmountDue) AS 'Due Income', SUM(cuAmountPaid)+SUM(cuAmountDue) AS 'Potential Income' FROM dbcustomer";
+				outputArea.setText("This query shows incoming money into company's bank account. \nDue Income shows the money which is yet to be paid by the customers \nPotential Income is when the customers clear their money due"); 
+			}
+			else 
+				if(option == 0){
+					query = "SELECT SUM(emSalary) AS 'costs per month' FROM dbemployee";
+					outputArea.setText("This query shows the expediture per month for the comany (which is a total of all the employee salaries).");
+				}
+			try{
+				Statement stmt = con.createStatement();
+				ResultSet resSet = stmt.executeQuery(query);
+				tableResults.formatTable(resSet);
+			}
+			catch(SQLException e){
+				outputArea.setText(e.getMessage());	
+			}
+		}
+	}
+	
+	// TODO: Process 5: Customer transactions
 	public void process5() {
 		try
 		{
@@ -399,9 +369,11 @@ public class OwnQueries extends JFrame
 		}
 	}
 	
+	// TODO: Process 6: View upcoming event details by date or venue
 	public void process6() {
 	}
 	
+	// TODO: Customer Transactions
 	public void process7() {
 		 try {
 	            //get balance limit from user
