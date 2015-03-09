@@ -26,10 +26,10 @@ public class OwnQueries extends JFrame
   	JTextArea outputArea;
   	QueryTable tableResults;
 	Connection con;
-	final static int NUM_BUTTONS = 8;
+	final static int NUM_BUTTONS = 9;
 	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 	//add more prepared statements here if you need more
-	PreparedStatement prepStat0, prepStat2, prepStat4, prepStat5,prepStat5Secondary,prepStat6,prepStat6Secondary;
+	PreparedStatement prepStat0, prepStat2, prepStat4, prepStat5,prepStat5Secondary,prepStat6,prepStat6Secondary,prepStat7,prepStat7Secondary;
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
   	JButton queryButton[] = new JButton[NUM_BUTTONS];
@@ -71,6 +71,7 @@ public class OwnQueries extends JFrame
 	   	add(scroll, BorderLayout.SOUTH);  
 	}
   	
+  	
   	public void createButtons() {
 	    //Create upper panels for label, text area and buttons
 	    JPanel p1 = new JPanel();
@@ -92,8 +93,10 @@ public class OwnQueries extends JFrame
 	   	queryButton[5] = new JButton("Update customer amount paid");
 	   	// 3 Inputs: 1. Option 2. Date (Date picker) 3. Location (Dropdown)
 	   	queryButton[6] = new JButton("View upcoming events");
+	   	// 2 Input: 1. Employee ID 2. Location ID
+	   	queryButton[7] = new JButton("Change an employee's Work location");
 	   	//
-	   	queryButton[7] = new JButton("");
+	   	queryButton[8] = new JButton("");
 	   	
 	   	//TODO: Similar queries will be grouped and user will get an option on which specific query needs to be performed
 
@@ -107,7 +110,7 @@ public class OwnQueries extends JFrame
 	   	add(p1, BorderLayout.NORTH);
   	}
 	   	
-
+  	
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
   	//set up all your prepared statements here
   	public void prepareStatements() {
@@ -124,6 +127,10 @@ public class OwnQueries extends JFrame
 	   	// Queries for viewing upcoming events
   		String prepquery6 = "SELECT CONCAT(evName) AS 'Name', CONCAT(cuName) AS 'Held by', CONCAT(veName) AS 'Location', DATE_FORMAT(evStartDate, '%d %b%y') AS 'Start Date', DATEDIFF(evEndDate,evStartDate) AS 'Duration (Days)' FROM dbevent,dbcustomer,dbvenue WHERE evCustomerID = cuID AND evVenueID = veID AND evStartDate BETWEEN ? AND ?";
   		String prepquery6Secondary = "SELECT CONCAT(evName) AS 'Name', CONCAT(cuName) AS 'Held by', DATE_FORMAT(evStartDate, '%d %b%y') AS 'Start Date', DATEDIFF(evEndDate,evStartDate) AS 'Duration (Days)' FROM dbevent,dbcustomer,dbvenue WHERE evCustomerID = cuID AND evVenueID = veID AND veID = ?";
+  		// Queries for process 7
+  		String prepquery7 = "UPDATE dbemployee SET emWorkVenueID = ? WHERE emID = ?";
+  		String prepquery7Secondary = "UPDATE dbemployee SET emManager = ? WHERE emID = ?";
+  		
   		//++//++//++//++//++//++//++//++//++//++//++//++//++//++
   		
   		//prepares the statements once 
@@ -135,6 +142,8 @@ public class OwnQueries extends JFrame
  			prepStat5Secondary = con.prepareStatement(prepquery5Secondary);
  			prepStat6 = con.prepareStatement(prepquery6);
  			prepStat6Secondary = con.prepareStatement(prepquery6Secondary);
+ 			prepStat7 = con.prepareStatement(prepquery7);
+ 			prepStat7Secondary = con.prepareStatement(prepquery7Secondary);
   		}
   		catch (SQLException e) {
   			outputArea.setText(e.getMessage());
@@ -161,7 +170,8 @@ public class OwnQueries extends JFrame
   			process6();
   		else if (e.getSource() == queryButton[7] )
             process7();
-
+  		else if (e.getSource() == queryButton[8] )
+  			process8();
   	}
   	
    	//++//++//++//++//++//++//++//++//++//++//++//++//++//++
@@ -181,6 +191,7 @@ public class OwnQueries extends JFrame
 		}	
   	}
   	
+  	// This converts a string to a SQL Date type
   	public java.sql.Date parseDate(String dateStr) throws java.text.ParseException{
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		java.util.Date dateParsed = dateFormat.parse(dateStr);
@@ -446,7 +457,56 @@ public class OwnQueries extends JFrame
 		}
 	}
 	
-	// Process 7: Blank process
+	// Process 7: Change an employee's work location
 	public void process7() {
-		 }
+		drawTable("dbemployee");
+		String emID = JOptionPane.showInputDialog(this,"Please enter the employee ID ");
+		if(emID != null){
+			try {
+				prepStat7.setInt(2, Integer.parseInt(emID));
+				drawTable("dbvenue");
+				String newVeID = JOptionPane.showInputDialog(this, "Enter employee's new Work Venue ID");
+				if(newVeID != null){
+					prepStat7.setInt(1, Integer.parseInt(newVeID));
+					prepStat7.executeUpdate();
+					JOptionPane.showMessageDialog(this, "Update success!\n emID: "+ emID + " MOVED TO emWorkVenueID: " + newVeID);
+					int option = JOptionPane.showConfirmDialog(this, "Would like to appoint a new manager for this employee?");
+					if(option == 0){
+						String query = "SELECT emFirstName,emLastName,emSSN FROM dbemployee WHERE emWorkVenueID = " + newVeID + " AND emManager = 'NULL'";
+						outputArea.setText("The above table shows avilable managers at employee's new location");
+						Statement stmt = con.createStatement();
+						ResultSet resSet = stmt.executeQuery(query);
+						tableResults.clearTable();
+						tableResults.formatTable(resSet);
+						String newManager = JOptionPane.showInputDialog(this, "Please enter the SSN of the new manager for this employee");
+						if(newManager != null){
+							prepStat7Secondary.setInt(2, Integer.parseInt(emID));
+							prepStat7Secondary.setInt(1, Integer.parseInt(newManager));
+							prepStat7Secondary.executeUpdate();
+							JOptionPane.showMessageDialog(this, "Update success!\n emID: "+ emID + " Manager updated to emSSN: " + newManager);
+						}
+						else{
+							outputArea.setText("Invalid SSN!");
+						}
+						query = "SELECT emID,emFirstName,emLastName,emSSN,emWorkVenueID,emManager FROM dbemployee WHERE emID = " + emID;
+						resSet = stmt.executeQuery(query);
+						tableResults.clearTable();
+						tableResults.formatTable(resSet);
+					}
+				}
+				else{
+					outputArea.setText("Invalid ID");
+				}
+			} catch (NumberFormatException | SQLException e) {
+				outputArea.setText(e.getMessage());
+			}
+		}
+		else{
+			outputArea.setText("Invalid ID!");
+		}
+		}
+	
+	// Process 8: blank process
+	public void process8(){
+	}
 }
