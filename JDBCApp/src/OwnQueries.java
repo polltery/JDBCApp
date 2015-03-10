@@ -115,7 +115,7 @@ public class OwnQueries extends JFrame
   	//set up all your prepared statements here
   	public void prepareStatements() {
   		//used in process0
-  		String prepquery0 = "UPDATE dbcustomer SET cuAmountDue = cuAmountDue*(1-cuEventsBooked*?) WHERE cuAmountDue > 0 AND cuEventsBooked >= ?";
+  		String prepquery0 = "UPDATE dbcustomer SET cuAmountDue = cuAmountDue*(1-(cuEventsBooked*?)) WHERE cuAmountDue > 0 AND cuEventsBooked >= ?";
   		//used in process1
   		String prepquery2 = "UPDATE dbemployee SET emSalary = emSalary+? WHERE NOW() > DATE_ADD(emJoinDate,INTERVAL ? YEAR);";   
   		//this one gets the types to go into a dropdown list
@@ -216,8 +216,8 @@ public class OwnQueries extends JFrame
             	prepStat0.setInt(2,minEventsInt);
             	String discount = JOptionPane.showInputDialog(this, "Please enter how much discount (in percentage 0-100) would you like to give: " );
 				if(discount != null){
-					int discountInt = Integer.parseInt(discount);
-	            	prepStat0.setInt(1,discountInt/100);
+					float discountFloat = (Float.parseFloat(discount)/100);
+	            	prepStat0.setFloat(1,discountFloat);
 	            	int rowsAffected = prepStat0.executeUpdate();
 					JOptionPane.showMessageDialog(this, rowsAffected + " rows Affected");
 					int option = JOptionPane.showConfirmDialog(this, "View customer table?");
@@ -246,10 +246,9 @@ public class OwnQueries extends JFrame
 				String query = "UPDATE dbcustomer SET cuEventsBooked = (SELECT COUNT(evCustomerID) FROM dbevent WHERE evCustomerID = cuID)";
 				Statement stmt = con.createStatement();
 				int rowsUpdated = stmt.executeUpdate(query);
-				JOptionPane.showMessageDialog(this, rowsUpdated + " rows Affected (Events booked update)");
 				query = "UPDATE dbcustomer SET cuFeeStatus = IF(cuAmountDue > 0,'Due','Paid')";
 				rowsUpdated = stmt.executeUpdate(query);
-				JOptionPane.showMessageDialog(this, rowsUpdated + " rows Affected (Fee status update)");
+				JOptionPane.showMessageDialog(this, "Update success!");
 				option = JOptionPane.showConfirmDialog(this, "View customer table?");
 				if(option == 0){
 					drawTable("dbcustomer");
@@ -497,7 +496,7 @@ public class OwnQueries extends JFrame
 				else{
 					outputArea.setText("Invalid ID");
 				}
-			} catch (NumberFormatException | SQLException e) {
+			} catch (SQLException e) {
 				outputArea.setText(e.getMessage());
 			}
 		}
